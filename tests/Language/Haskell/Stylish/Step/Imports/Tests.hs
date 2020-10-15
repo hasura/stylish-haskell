@@ -23,46 +23,89 @@ fromImportAlign align = defaultOptions { importAlign = align }
 
 --------------------------------------------------------------------------------
 tests :: Test
-tests = testGroup "Language.Haskell.Stylish.Step.Imports.Tests"
-    [ testCase "case 01" case01
-    , testCase "case 02" case02
-    , testCase "case 03" case03
-    , testCase "case 04" case04
-    , testCase "case 05" case05
-    , testCase "case 06" case06
-    , testCase "case 07" case07
-    , testCase "case 08" case08
-    , testCase "case 08b" case08b
-    , testCase "case 09" case09
-    , testCase "case 10" case10
-    , testCase "case 11" case11
-    , testCase "case 11b" case11b
-    , testCase "case 12" case12
-    , testCase "case 12b" case12b
-    , testCase "case 13" case13
-    , testCase "case 13b" case13b
-    , testCase "case 14" case14
-    , testCase "case 15" case15
-    , testCase "case 16" case16
-    , testCase "case 17" case17
-    , testCase "case 18" case18
-    , testCase "case 19" case19
-    , testCase "case 19b" case19b
-    , testCase "case 19d" case19c
-    , testCase "case 19d" case19d
-    , testCase "case 20" case20
-    , testCase "case 21" case21
-    , testCase "case 22" case22
-    , testCase "case 23" case23
-    , testCase "case 23b" case23b
-    , testCase "case 24" case24
-    , testCase "case 25" case25
-    , testCase "case 26 (issue 185)" case26
-    , testCase "case 27" case27
-    , testCase "case 28" case28
-    , testCase "case 29" case29
-    , testCase "case 30" case30
+tests = testGroup "Language.Haskell.Stylish.Step.Imports.Tests" [ testCase "hasura" caseHasura]
+--  [ testCase "case 01" case01
+--  , testCase "case 02" case02
+--  , testCase "case 03" case03
+--  , testCase "case 04" case04
+--  , testCase "case 05" case05
+--  , testCase "case 06" case06
+--  , testCase "case 07" case07
+--  , testCase "case 08" case08
+--  , testCase "case 08b" case08b
+--  , testCase "case 09" case09
+--  , testCase "case 10" case10
+--  , testCase "case 11" case11
+--  , testCase "case 11b" case11b
+--  , testCase "case 12" case12
+--  , testCase "case 12b" case12b
+--  , testCase "case 13" case13
+--  , testCase "case 13b" case13b
+--  , testCase "case 14" case14
+--  , testCase "case 15" case15
+--  , testCase "case 16" case16
+--  , testCase "case 17" case17
+--  , testCase "case 18" case18
+--  , testCase "case 19" case19
+--  , testCase "case 19b" case19b
+--  , testCase "case 19d" case19c
+--  , testCase "case 19d" case19d
+--  , testCase "case 20" case20
+--  , testCase "case 21" case21
+--  , testCase "case 22" case22
+--  , testCase "case 23" case23
+--  , testCase "case 23b" case23b
+--  , testCase "case 24" case24
+--  , testCase "case 25" case25
+--  , testCase "case 26 (issue 185)" case26
+--  , testCase "case 27" case27
+--  , testCase "case 28" case28
+--  , testCase "case 29" case29
+--  , testCase "case 30" case30
+--  ]
+
+
+--------------------------------------------------------------------------------
+caseHasura :: Assertion
+caseHasura = assertSnippet (step (Just 100) $ fromImportAlign File)
+    [ "module Hasura.Stylish.Test where"
+    , ""
+    , "import           Hasura.Incremental         (Cacheable)"
+    , "import           Hasura.Prelude"
+    , "import           Hasura.SQL.Types"
+    , ""
+    , "import qualified Hasura.SQL.Types as S"
+    , "import           Data.String                (fromString)"
+    , ""
+    , "import qualified Data.Aeson                 as J"
+    , "import qualified Data.HashMap.Strict        as HM"
+    , "import qualified Data.Text.Extended         as T"
+    , "import qualified Text.Builder               as TB"
+    , ""
+    , "import           Language.Haskell.TH.Syntax (Lift)"
+    , ""
+    , "parser = graphQL magic"
     ]
+    [ "module Hasura.Stylish.Test where"
+    , ""
+    , "import           Hasura.Prelude"
+    , ""
+    , "import qualified Data.Aeson                 as J"
+    , "import qualified Data.HashMap.Strict        as HM"
+    , "import qualified Data.Text.Extended         as T"
+    , "import qualified Text.Builder               as TB"
+    , ""
+    , "import           Data.String                (fromString)"
+    , "import           Language.Haskell.TH.Syntax (Lift)"
+    , ""
+    , "import qualified Hasura.SQL.Types           as S"
+    , ""
+    , "import           Hasura.Incremental         (Cacheable)"
+    , "import           Hasura.SQL.Types"
+    , ""
+    , "parser = graphQL magic"
+    ]
+
 
 
 --------------------------------------------------------------------------------
