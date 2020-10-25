@@ -208,8 +208,8 @@ moduleImportHasuraGroups m = mapMaybe nonEmpty
   where
     allImports    = moduleImports m
     prelude       = filterOnName (== "Hasura.Prelude") allImports
-    hasuraModules = filterOnName (isPrefixOf "Hasura.") $ filterOnName (/= "Hasura.Prelude") allImports
-    dependencies  = filterOnName (not . isPrefixOf "Hasura.") allImports
+    hasuraModules = filterOnName (isPrefixOf "Hasura") $ filterOnName (/= "Hasura.Prelude") allImports
+    dependencies  = filterOnName (not . isPrefixOf "Hasura") allImports
     filterOnName namePredicate = filter $ \i ->
       namePredicate $ GHC.moduleNameString $ unLocated $ ideclName $ unImport $ unLocated i
     filterOnQualification qualification = filter $ \i ->
