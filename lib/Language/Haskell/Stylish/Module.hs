@@ -1,11 +1,11 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE BlockArguments             #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE ViewPatterns               #-}
 module Language.Haskell.Stylish.Module
   ( -- * Data types
     Module (..)
@@ -20,6 +20,7 @@ module Language.Haskell.Stylish.Module
   , moduleHeader
   , moduleImports
   , moduleImportGroups
+  , moduleImportHasuraGroups
   , moduleDecls
   , moduleComments
   , moduleLanguagePragmas
@@ -44,31 +45,32 @@ module Language.Haskell.Stylish.Module
   ) where
 
 --------------------------------------------------------------------------------
-import           Data.Function                   ((&), on)
-import           Data.Functor                    ((<&>))
-import           Data.Generics                   (Typeable, everything, mkQ)
-import           Data.Maybe                      (mapMaybe)
-import           Data.Map                        (Map)
-import qualified Data.Map                        as Map
-import           Data.List                       (nubBy, sort)
-import           Data.List.NonEmpty              (NonEmpty (..), nonEmpty)
-import           Data.Text                       (Text)
-import qualified Data.Text                       as T
-import           Data.Data                       (Data)
+import           Data.Data                    (Data)
+import           Data.Function                (on, (&))
+import           Data.Functor                 ((<&>))
+import           Data.Generics                (Typeable, everything, mkQ)
+import           Data.List                    (isPrefixOf, nubBy, sort)
+import           Data.List.NonEmpty           (NonEmpty (..), nonEmpty)
+import           Data.Map                     (Map)
+import qualified Data.Map                     as Map
+import           Data.Maybe                   (mapMaybe)
+import           Data.Text                    (Text)
+import qualified Data.Text                    as T
 
 --------------------------------------------------------------------------------
-import qualified ApiAnnotation                   as GHC
-import qualified Lexer                           as GHC
-import           GHC.Hs                          (ImportDecl(..), ImportDeclQualifiedStyle(..))
-import qualified GHC.Hs                          as GHC
-import           GHC.Hs.Extension                (GhcPs)
-import           GHC.Hs.Decls                    (LHsDecl)
-import           Outputable                      (Outputable)
-import           SrcLoc                          (GenLocated(..), RealLocated)
-import           SrcLoc                          (RealSrcSpan(..), SrcSpan(..))
-import           SrcLoc                          (Located)
-import qualified SrcLoc                          as GHC
-import qualified Module                          as GHC
+import qualified ApiAnnotation                as GHC
+import           GHC.Hs                       (ImportDecl (..),
+                                               ImportDeclQualifiedStyle (..))
+import qualified GHC.Hs                       as GHC
+import           GHC.Hs.Decls                 (LHsDecl)
+import           GHC.Hs.Extension             (GhcPs)
+import qualified Lexer                        as GHC
+import qualified Module                       as GHC
+import           Outputable                   (Outputable)
+import           SrcLoc                       (GenLocated (..), Located,
+                                               RealLocated, RealSrcSpan (..),
+                                               SrcSpan (..))
+import qualified SrcLoc                       as GHC
 
 --------------------------------------------------------------------------------
 import           Language.Haskell.Stylish.GHC
@@ -80,10 +82,10 @@ type Lines = [String]
 --------------------------------------------------------------------------------
 -- | Concrete module type
 data Module = Module
-  { parsedComments :: [GHC.RealLocated GHC.AnnotationComment]
+  { parsedComments    :: [GHC.RealLocated GHC.AnnotationComment]
   , parsedAnnotations :: [(GHC.ApiAnnKey, [GHC.SrcSpan])]
-  , parsedAnnotSrcs :: Map RealSrcSpan [GHC.AnnKeywordId]
-  , parsedModule :: GHC.Located (GHC.HsModule GhcPs)
+  , parsedAnnotSrcs   :: Map RealSrcSpan [GHC.AnnKeywordId]
+  , parsedModule      :: GHC.Located (GHC.HsModule GhcPs)
   } deriving (Data)
 
 -- | Declarations in module
@@ -107,7 +109,7 @@ canMergeImport (Import i0) (Import i1) = and $ fmap (\f -> f i0 i1)
   where
     hasMergableQualified QualifiedPre QualifiedPost = True
     hasMergableQualified QualifiedPost QualifiedPre = True
-    hasMergableQualified q0 q1 = q0 == q1
+    hasMergableQualified q0 q1                      = q0 == q1
 
 instance Eq Import where
   i0 == i1 = canMergeImport i0 i1 && hasSameImports (unImport i0) (unImport i1)
@@ -126,8 +128,8 @@ newtype Comments = Comments [GHC.RealLocated GHC.AnnotationComment]
 
 -- | A module header is its name, exports and haddock docstring
 data ModuleHeader = ModuleHeader
-  { name :: Maybe (GHC.Located GHC.ModuleName)
-  , exports :: Maybe (GHC.Located [GHC.LIE GhcPs])
+  { name     :: Maybe (GHC.Located GHC.ModuleName)
+  , exports  :: Maybe (GHC.Located [GHC.LIE GhcPs])
   , haddocks :: Maybe GHC.LHsDocString
   }
 
@@ -141,7 +143,7 @@ makeModule pstate = Module comments annotations annotationMap
       $ GHC.comment_q pstate ++ (GHC.annotations_comments pstate >>= snd)
 
     filterRealLocated = mapMaybe \case
-      GHC.L (GHC.RealSrcSpan s) e -> Just (GHC.L s e)
+      GHC.L (GHC.RealSrcSpan s) e   -> Just (GHC.L s e)
       GHC.L (GHC.UnhelpfulSpan _) _ -> Nothing
 
     annotations
@@ -154,7 +156,7 @@ makeModule pstate = Module comments annotations annotationMap
 
     x = \case
       ((RealSrcSpan rspan, annot), _) -> Just (rspan, [annot])
-      _ -> Nothing
+      _                               -> Nothing
 
 -- | Get all declarations in module
 moduleDecls :: Module -> Decls
@@ -194,6 +196,24 @@ moduleImports m
 -- | Get groups of imports from module
 moduleImportGroups :: Module -> [NonEmpty (Located Import)]
 moduleImportGroups = groupByLine unsafeGetRealSrcSpan . moduleImports
+
+moduleImportHasuraGroups :: Module -> [NonEmpty (Located Import)]
+moduleImportHasuraGroups m = mapMaybe nonEmpty
+  [ prelude
+  , filterOnQualification True  dependencies
+  , filterOnQualification False dependencies
+  , filterOnQualification True  hasuraModules
+  , filterOnQualification False hasuraModules
+  ]
+  where
+    allImports    = moduleImports m
+    prelude       = filterOnName (== "Hasura.Prelude") allImports
+    hasuraModules = filterOnName (isPrefixOf "Hasura") $ filterOnName (/= "Hasura.Prelude") allImports
+    dependencies  = filterOnName (not . isPrefixOf "Hasura") allImports
+    filterOnName namePredicate = filter $ \i ->
+      namePredicate $ GHC.moduleNameString $ unLocated $ ideclName $ unImport $ unLocated i
+    filterOnQualification qualification = filter $ \i ->
+      qualification == GHC.isImportDeclQualified (ideclQualified $ unImport $ unLocated i)
 
 -- The same logic as 'Language.Haskell.Stylish.Module.moduleImportGroups'.
 groupByLine :: (a -> RealSrcSpan) -> [a] -> [NonEmpty a]
